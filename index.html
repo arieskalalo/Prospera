@@ -307,6 +307,58 @@ html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; font-s
 </style>
 </head>
 <body>
+
+<!-- PASSWORD GATE -->
+<div id="pw-gate" style="
+  position:fixed;inset:0;background:linear-gradient(135deg,#09302C 0%,#0C7A6E 100%);
+  display:flex;align-items:center;justify-content:center;z-index:9999;
+">
+  <div style="
+    background:#fff;border-radius:16px;padding:36px 40px;width:340px;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
+  ">
+    <div style="
+      width:52px;height:52px;border-radius:14px;
+      background:linear-gradient(135deg,#09302C,#0C7A6E);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 16px;font-family:'DM Serif Display',serif;font-size:24px;color:#fff;
+    ">H</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:22px;color:#1A1A1A;margin-bottom:4px">Hubpay CRM</div>
+    <div style="font-size:12px;color:#9CA3AF;margin-bottom:24px;letter-spacing:.5px">Enter password to continue</div>
+    <input id="pw-input" type="password" placeholder="Password" autocomplete="current-password" style="
+      width:100%;padding:10px 14px;border:1.5px solid #E8E3DA;border-radius:8px;
+      font-family:inherit;font-size:14px;outline:none;box-sizing:border-box;
+      transition:border-color .15s;
+    " oninput="document.getElementById('pw-err').style.display='none'"
+       onkeydown="if(event.key==='Enter')document.getElementById('pw-submit').click()">
+    <div id="pw-err" style="display:none;font-size:12px;color:#DC2626;margin-top:8px">Incorrect password</div>
+    <button id="pw-submit" onclick="(function(){
+      var pw=document.getElementById('pw-input').value;
+      if(pw==='hubpay2026'){
+        sessionStorage.setItem('hp_auth','1');
+        document.getElementById('pw-gate').style.display='none';
+      } else {
+        document.getElementById('pw-err').style.display='block';
+        document.getElementById('pw-input').value='';
+        document.getElementById('pw-input').focus();
+      }
+    })()" style="
+      margin-top:14px;width:100%;padding:11px;border:none;border-radius:8px;
+      background:linear-gradient(135deg,#09302C,#0C7A6E);color:#fff;
+      font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+      transition:opacity .15s;
+    " onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+      Unlock
+    </button>
+  </div>
+</div>
+
+<script>
+  if(sessionStorage.getItem('hp_auth')==='1'){
+    document.getElementById('pw-gate').style.display='none';
+  }
+</script>
+
 <div id="app">
   <!-- SIDEBAR -->
   <aside id="sidebar">
