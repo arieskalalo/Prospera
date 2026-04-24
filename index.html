@@ -314,60 +314,50 @@ html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; font-s
   white-space: nowrap; z-index: 9999;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── LOADING ──────────────────────────────── */
+#loading-ov { position:fixed;inset:0;background:rgba(255,255,255,.78);z-index:8000;display:none;align-items:center;justify-content:center; }
+.spinner { width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── SIGN-IN GATE ─────────────────────────── */
+#signin-gate { position:fixed;inset:0;background:linear-gradient(135deg,#09302C 0%,#0C7A6E 100%);display:none;align-items:center;justify-content:center;z-index:9999; }
+.si-box { background:#fff;border-radius:16px;padding:36px 40px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center; }
+.si-logo { width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#09302C,#0C7A6E);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'DM Serif Display',serif;font-size:24px;color:#fff; }
+.si-title { font-family:'DM Serif Display',serif;font-size:22px;color:#1A1A1A;margin-bottom:4px; }
+.si-sub { font-size:12px;color:#9CA3AF;margin-bottom:24px;letter-spacing:.5px; }
+.si-input { width:100%;padding:10px 14px;border:1.5px solid #E8E3DA;border-radius:8px;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box;transition:border-color .15s;margin-bottom:10px; }
+.si-input:focus { border-color:var(--primary); }
+.si-err { display:none;font-size:12px;color:#DC2626;margin-bottom:10px; }
+.si-btn { margin-top:6px;width:100%;padding:11px;border:none;border-radius:8px;background:linear-gradient(135deg,#09302C,#0C7A6E);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s; }
+.si-btn:hover { opacity:.88; }
+.si-btn:disabled { opacity:.55;cursor:not-allowed; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const db = window.supabase.createClient(
+    'https://flpwzwctvtjoagqesyta.supabase.co',
+    'sb_publishable_ID6NOV6Ck-6pnD1tgY2ctw_gkFqW3bF'
+  );
+</script>
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
-<div id="pw-gate" style="
-  position:fixed;inset:0;background:linear-gradient(135deg,#09302C 0%,#0C7A6E 100%);
-  display:flex;align-items:center;justify-content:center;z-index:9999;
-">
-  <div style="
-    background:#fff;border-radius:16px;padding:36px 40px;width:340px;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;
-  ">
-    <div style="
-      width:52px;height:52px;border-radius:14px;
-      background:linear-gradient(135deg,#09302C,#0C7A6E);
-      display:flex;align-items:center;justify-content:center;
-      margin:0 auto 16px;font-family:'DM Serif Display',serif;font-size:24px;color:#fff;
-    ">P</div>
-    <div style="font-family:'DM Serif Display',serif;font-size:22px;color:#1A1A1A;margin-bottom:4px">Prospera</div>
-    <div style="font-size:12px;color:#9CA3AF;margin-bottom:24px;letter-spacing:.5px">Enter password to continue</div>
-    <input id="pw-input" type="password" placeholder="Password" autocomplete="current-password" style="
-      width:100%;padding:10px 14px;border:1.5px solid #E8E3DA;border-radius:8px;
-      font-family:inherit;font-size:14px;outline:none;box-sizing:border-box;
-      transition:border-color .15s;
-    " oninput="document.getElementById('pw-err').style.display='none'"
-       onkeydown="if(event.key==='Enter')document.getElementById('pw-submit').click()">
-    <div id="pw-err" style="display:none;font-size:12px;color:#DC2626;margin-top:8px">Incorrect password</div>
-    <button id="pw-submit" onclick="(function(){
-      var pw=document.getElementById('pw-input').value;
-      if(pw==='kaneki0112'){
-        sessionStorage.setItem('hp_auth','1');
-        document.getElementById('pw-gate').style.display='none';
-      } else {
-        document.getElementById('pw-err').style.display='block';
-        document.getElementById('pw-input').value='';
-        document.getElementById('pw-input').focus();
-      }
-    })()" style="
-      margin-top:14px;width:100%;padding:11px;border:none;border-radius:8px;
-      background:linear-gradient(135deg,#09302C,#0C7A6E);color:#fff;
-      font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
-      transition:opacity .15s;
-    " onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-      Unlock
-    </button>
+<!-- SIGN-IN GATE -->
+<div id="signin-gate">
+  <div class="si-box">
+    <div class="si-logo">P</div>
+    <div class="si-title">Prospera</div>
+    <div class="si-sub">Sign in to continue</div>
+    <input id="si-email" class="si-input" type="email" placeholder="Email" autocomplete="email">
+    <input id="si-pw" class="si-input" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="si-err" class="si-err">Invalid email or password</div>
+    <button id="si-btn" class="si-btn">Sign In</button>
   </div>
 </div>
 
-<script>
-  if(sessionStorage.getItem('hp_auth')==='1'){
-    document.getElementById('pw-gate').style.display='none';
-  }
-</script>
+<!-- LOADING -->
+<div id="loading-ov"><div class="spinner"></div></div>
 
 <div id="app">
   <!-- SIDEBAR -->
@@ -488,43 +478,65 @@ const $     = id => document.getElementById(id);
 const badge = (txt,clr) => `<span class="badge" style="color:${clr};background:${clr}1A">${esc(txt)}</span>`;
 
 // ════════════════════════════════════════════
-// STORE  (localStorage)
+// STORE  (Supabase)
 // ════════════════════════════════════════════
 const Store = {
-  leads: [], _nid: 20,
-  load() {
-    try {
-      const raw = localStorage.getItem('hp_crm_v4');
-      if (raw) { const d = JSON.parse(raw); this.leads = d.leads||[]; this._nid = d.nid||20; }
-      else { this.leads = SEED.map(l=>({...l})); this._nid = 20; this._save(); }
-    } catch { this.leads = SEED.map(l=>({...l})); this._nid = 20; }
+  leads: [],
+  async load() {
+    const [{ data: leadRows }, { data: actRows }] = await Promise.all([
+      db.from('leads').select('*').order('created_at', { ascending: false }),
+      db.from('activities').select('*').order('date', { ascending: false })
+    ]);
+    this.leads = (leadRows||[]).map(l => ({
+      ...l, lastActivity: l.last_activity,
+      activities: (actRows||[]).filter(a => a.lead_id === l.id)
+    }));
   },
-  _save() {
-    try { localStorage.setItem('hp_crm_v4', JSON.stringify({leads:this.leads,nid:this._nid})); } catch {}
+  async add(d) {
+    const { data: lead } = await db.from('leads').insert({
+      company: d.company, contact: d.contact||'', email: d.email||'',
+      phone: d.phone||'', stage: d.stage||'New Lead',
+      value: Number(d.value)||0, product: d.product||'',
+      source: d.source||'', industry: d.industry||'',
+      size: d.size||'', notes: d.notes||''
+    }).select().single();
+    await db.from('activities').insert({ lead_id: lead.id, date: today(), type: 'Note', text: 'Lead created.' });
+    await this.load();
+    return this.find(lead.id);
   },
-  add(d) {
-    const l = {...d, id:this._nid++, value:Number(d.value)||0,
-      created:today(), lastActivity:today(),
-      activities:[{date:today(),type:'Note',text:'Lead created.'}]};
-    this.leads.unshift(l); this._save(); return l;
+  async update(d) {
+    await db.from('leads').update({
+      company: d.company, contact: d.contact||'', email: d.email||'',
+      phone: d.phone||'', stage: d.stage, value: Number(d.value)||0,
+      product: d.product||'', source: d.source||'',
+      industry: d.industry||'', size: d.size||'', notes: d.notes||''
+    }).eq('id', d.id);
+    await this.load();
+    return this.find(d.id);
   },
-  update(d) {
-    const l = {...d, value:Number(d.value)||0};
-    this.leads = this.leads.map(x => x.id===l.id ? l : x);
-    this._save(); return l;
+  async del(id) {
+    await db.from('leads').delete().eq('id', id);
+    this.leads = this.leads.filter(l => l.id !== id);
   },
-  del(id) { this.leads = this.leads.filter(l=>l.id!==id); this._save(); },
-  move(id, stage) {
-    const d=today(), a={date:d,type:'Stage Change',text:`Moved to ${stage}.`};
-    this.leads = this.leads.map(l => l.id===id ? {...l,stage,lastActivity:d,activities:[a,...l.activities]} : l);
-    this._save(); return this.find(id);
+  async move(id, stage) {
+    const d = today();
+    await Promise.all([
+      db.from('leads').update({ stage, last_activity: d }).eq('id', id),
+      db.from('activities').insert({ lead_id: id, date: d, type: 'Stage Change', text: `Moved to ${stage}.` })
+    ]);
+    await this.load();
+    return this.find(id);
   },
-  addAct(id, type, text) {
-    const a={date:today(),type,text};
-    this.leads = this.leads.map(l => l.id===id ? {...l,lastActivity:today(),activities:[a,...l.activities]} : l);
-    this._save(); return this.find(id);
+  async addAct(id, type, text) {
+    const d = today();
+    await Promise.all([
+      db.from('activities').insert({ lead_id: id, date: d, type, text }),
+      db.from('leads').update({ last_activity: d }).eq('id', id)
+    ]);
+    await this.load();
+    return this.find(id);
   },
-  find(id) { return this.leads.find(l=>l.id===id); }
+  find(id) { return this.leads.find(l => l.id === id); }
 };
 
 // ════════════════════════════════════════════
@@ -918,9 +930,9 @@ function initDrag() {
         const h=col.querySelector('.col-empty'); if(h) h.classList.remove('hint');
       }
     });
-    col.addEventListener('drop',e=>{
+    col.addEventListener('drop',async e=>{
       e.preventDefault(); col.classList.remove('drag-over');
-      if(App.dragId){ Store.move(App.dragId,col.dataset.col); renderAll(); }
+      if(App.dragId){ setLoading(true);await Store.move(App.dragId,col.dataset.col);setLoading(false);renderAll(); }
     });
   });
 }
@@ -1019,16 +1031,31 @@ function parseCSV(text) {
   return leads;
 }
 
-function importLeads(rows) {
+async function importLeads(rows) {
   const existing = new Set(Store.leads.map(l => l.company.toLowerCase().trim()));
-  let imported = 0, skipped = 0;
-  rows.forEach(row => {
-    if (existing.has(row.company.toLowerCase().trim())) { skipped++; return; }
-    Store.add(row);
-    existing.add(row.company.toLowerCase().trim());
-    imported++;
-  });
-  return { imported, skipped };
+  const toInsert = rows.filter(r => !existing.has(r.company.toLowerCase().trim()));
+  const skipped = rows.length - toInsert.length;
+  if (toInsert.length > 0) {
+    const { data: inserted } = await db.from('leads').insert(
+      toInsert.map(r => ({
+        company: r.company, contact: r.contact||'', email: r.email||'',
+        phone: r.phone||'', stage: r.stage, value: r.value,
+        product: r.product, source: r.source, industry: r.industry||'',
+        size: r.size, notes: r.notes||''
+      }))
+    ).select();
+    if (inserted?.length) {
+      await db.from('activities').insert(
+        inserted.map(l => ({ lead_id: l.id, date: today(), type: 'Note', text: 'Lead imported via CSV.' }))
+      );
+    }
+    await Store.load();
+  }
+  return { imported: toInsert.length, skipped };
+}
+
+function setLoading(on) {
+  $('loading-ov').style.display = on ? 'flex' : 'none';
 }
 
 // ════════════════════════════════════════════
@@ -1050,8 +1077,10 @@ function init() {
     reader.onload = ev => {
       const rows = parseCSV(ev.target.result);
       if (!rows.length) { showToast('No valid leads found in CSV'); return; }
-      showConfirm(`Import ${rows.length} lead${rows.length!==1?'s':''}?`, () => {
-        const { imported, skipped } = importLeads(rows);
+      showConfirm(`Import ${rows.length} lead${rows.length!==1?'s':''}?`, async () => {
+        setLoading(true);
+        const { imported, skipped } = await importLeads(rows);
+        setLoading(false);
         renderAll();
         showToast(`Imported ${imported} lead${imported!==1?'s':''}${skipped ? `, skipped ${skipped} duplicate${skipped!==1?'s':''}` : ''}`);
       });
@@ -1061,7 +1090,7 @@ function init() {
   });
 
   // New lead
-  $('btn-new').addEventListener('click',()=>openModal('New Lead',{stage:'New Lead',product:PRODUCTS[0],source:SOURCES[0],size:SIZES[0]},d=>{Store.add(d);renderAll();}));
+  $('btn-new').addEventListener('click',()=>openModal('New Lead',{stage:'New Lead',product:PRODUCTS[0],source:SOURCES[0],size:SIZES[0]},async d=>{setLoading(true);await Store.add(d);setLoading(false);renderAll();}));
 
   // Search / filters
   let t; $('search-input').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(renderAll,180);});
@@ -1080,10 +1109,10 @@ function init() {
       const id=parseInt(action.dataset.id);
       if(action.dataset.action==='edit'){
         const l=Store.find(id); if(!l) return;
-        openModal('Edit Lead',l,d=>{Store.update({...l,...d});if(App.selId===id)App.selId=id;renderAll();});
+        openModal('Edit Lead',l,async d=>{setLoading(true);await Store.update({...l,...d});setLoading(false);if(App.selId===id)App.selId=id;renderAll();});
       } else if(action.dataset.action==='delete'){
         const l=Store.find(id); if(!l) return;
-        showConfirm(`Delete "${l.company}"? This cannot be undone.`,()=>{if(App.selId===id)App.selId=null;Store.del(id);renderAll();});
+        showConfirm(`Delete "${l.company}"? This cannot be undone.`,async()=>{setLoading(true);if(App.selId===id)App.selId=null;await Store.del(id);setLoading(false);renderAll();});
       }
       return;
     }
@@ -1097,20 +1126,20 @@ function init() {
   });
 
   // Panel delegation (click)
-  $('panel').addEventListener('click',e=>{
+  $('panel').addEventListener('click',async e=>{
     if(e.target.closest('[data-panel-close]')){ App.selId=null; renderAll(); return; }
     const mv=e.target.closest('[data-move]');
-    if(mv&&App.selId){ Store.move(App.selId,mv.dataset.move); renderAll(); return; }
+    if(mv&&App.selId){ setLoading(true);await Store.move(App.selId,mv.dataset.move);setLoading(false);renderAll(); return; }
     if(e.target.closest('[data-panel-edit]')&&App.sel){
-      const l=App.sel; openModal('Edit Lead',l,d=>{Store.update({...l,...d});renderAll();}); return;
+      const l=App.sel; openModal('Edit Lead',l,async d=>{setLoading(true);await Store.update({...l,...d});setLoading(false);renderAll();}); return;
     }
     if(e.target.closest('[data-panel-del]')&&App.sel){
       const l=App.sel;
-      showConfirm(`Delete "${l.company}"? This cannot be undone.`,()=>{Store.del(App.selId);App.selId=null;renderAll();}); return;
+      showConfirm(`Delete "${l.company}"? This cannot be undone.`,async()=>{setLoading(true);await Store.del(App.selId);App.selId=null;setLoading(false);renderAll();}); return;
     }
     if(e.target.closest('[data-add-act]')){
       const txt=$('act-txt')?.value.trim(), type=$('act-type')?.value||'Note';
-      if(txt&&App.selId){ Store.addAct(App.selId,type,txt); renderAll(); }
+      if(txt&&App.selId){ setLoading(true);await Store.addAct(App.selId,type,txt);setLoading(false);renderAll(); }
     }
   });
 
@@ -1132,11 +1161,53 @@ function init() {
 }
 
 // ════════════════════════════════════════════
-// BOOT
+// AUTH + BOOT
 // ════════════════════════════════════════════
-Store.load();
-init();
-renderAll();
+function showSignIn() {
+  const gate = $('signin-gate');
+  gate.style.display = 'flex';
+  $('si-email').focus();
+
+  const btn = $('si-btn');
+  const err = $('si-err');
+
+  const doSignIn = async () => {
+    const email = $('si-email').value.trim();
+    const pw    = $('si-pw').value;
+    if (!email || !pw) return;
+    btn.disabled = true; btn.textContent = 'Signing in…'; err.style.display = 'none';
+    const { error } = await db.auth.signInWithPassword({ email, password: pw });
+    if (error) {
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign In';
+    } else {
+      gate.style.display = 'none';
+      await bootApp();
+    }
+  };
+
+  btn.addEventListener('click', doSignIn);
+  [$('si-email'), $('si-pw')].forEach(el =>
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); })
+  );
+}
+
+async function bootApp() {
+  setLoading(true);
+  await Store.load();
+  setLoading(false);
+  init();
+  renderAll();
+}
+
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    await bootApp();
+  } else {
+    showSignIn();
+  }
+})();
 </script>
 </body>
 </html>
