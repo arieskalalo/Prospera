@@ -14,6 +14,11 @@ const limit = pLimit(2); // max 2 scrapers in parallel
 async function main() {
   logger.info('=== Prospera scraper job started ===');
 
+  // 0. Test Supabase connection — fail fast if auth is broken
+  const { error: connErr } = await db.from('leads').select('id').limit(1);
+  if (connErr) { logger.error('Supabase connection failed:', connErr.message); process.exit(1); }
+  logger.info('Supabase connection OK');
+
   // 1. Get existing companies for deduplication
   const existing = await getExistingCompanies();
   logger.info(`Found ${existing.size} existing leads in database`);
@@ -64,9 +69,7 @@ async function main() {
     toInsert.push(lead);
   }
 
-  logger.info(`Filtered out ${filteredOut} irrelevant leads`);
-
-  logger.info(`After dedup: ${toInsert.length} new leads to insert`);
+  logger.info(`Raw: ${allRaw.length} | Relevant: ${toInsert.length + filteredOut} | Filtered out: ${filteredOut} | After dedup: ${toInsert.length}`);
 
   // 5. Insert into Supabase in batches of 50
   if (toInsert.length === 0) {

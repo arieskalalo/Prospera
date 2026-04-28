@@ -4,58 +4,84 @@ import { logger } from '../utils/logger.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://www.google.com/',
+  'Accept': 'application/rss+xml, application/xml, text/xml, */*',
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Search queries targeting UAE fintech companies
-const SEARCHES = [
-  'UAE fintech startup 2025',
-  'Dubai payment company',
-  'Abu Dhabi financial technology',
-  'MENA remittance company',
-  'UAE cross-border payments',
+// Google News RSS — free, no auth, no JS required
+const QUERIES = [
+  'UAE fintech payment startup funding',
+  'Dubai remittance cross-border payment',
+  'MENA payments company raises',
+  'Africa corridor payment UAE',
+  'UAE cross-border payroll company',
+  'Gulf fintech launch 2026',
 ];
 
-async function searchDuckDuckGo(query) {
-  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' site:crunchbase.com/organization')}`;
-  const { data: html } = await axios.get(url, { headers: HEADERS, timeout: 20000 });
-  const $ = cheerio.load(html);
-  const results = [];
+// Extract company name from news headline
+const PATTERNS = [
+  /^(.+?)\s+raises/i,
+  /^(.+?)\s+secures/i,
+  /^(.+?)\s+launches/i,
+  /^(.+?)\s+expands/i,
+  /^(.+?)\s+partners/i,
+  /^(.+?)\s+closes\s+\$/i,
+  /^(.+?)\s+gets\s+\$/i,
+  /^(.+?)\s+lands\s+\$/i,
+];
 
-  $('.result__title a, .result a[href*="crunchbase.com/organization"]').each((_, el) => {
-    const href = $(el).attr('href') || '';
-    const title = $(el).text().trim();
-    // Extract company name from crunchbase URL or title
-    const match = href.match(/organization\/([^/?&]+)/);
-    if (match) {
-      const slug = match[1];
-      const name = title.replace(/\s*[-|]\s*Crunchbase.*$/i, '').trim() || slug.replace(/-/g, ' ');
-      if (name.length > 2) results.push({ company: name, industry: 'Fintech', description: '' });
+function extractCompany(title = '') {
+  for (const p of PATTERNS) {
+    const m = title.match(p);
+    if (m && m[1]) {
+      const name = m[1]
+        .replace(/^(UAE|Dubai|Abu Dhabi|Saudi|MENA|Gulf|Meet|Why|How)\s+/i, '')
+        .trim();
+      if (name.length > 2 && name.length < 60) return name;
+    }
+  }
+  return null;
+}
+
+async function fetchGoogleNews(query) {
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  const { data: xml } = await axios.get(url, { headers: HEADERS, timeout: 15000 });
+  const $ = cheerio.load(xml, { xmlMode: true });
+  const leads = [];
+
+  $('item').each((_, el) => {
+    const title = $(el).find('title').text().replace(/ - .*$/, '').trim();
+    const desc  = $(el).find('description').text().replace(/<[^>]+>/g, '').trim();
+    const company = extractCompany(title);
+    if (company) {
+      leads.push({
+        company,
+        description: desc.slice(0, 400),
+        industry: 'Fintech / Payments',
+        _source: 'Google News',
+      });
     }
   });
 
-  return results;
+  return leads;
 }
 
 export async function runCrunchbase() {
-  logger.info('Crunchbase scraper starting');
+  logger.info('Google News scraper starting');
   const results = [];
 
-  for (const query of SEARCHES) {
+  for (const query of QUERIES) {
     try {
-      await sleep(3000); // be respectful with rate limiting
-      const found = await searchDuckDuckGo(query);
+      await sleep(1500);
+      const found = await fetchGoogleNews(query);
       results.push(...found);
-      logger.info(`Crunchbase search "${query}": found ${found.length} results`);
+      logger.info(`Google News "${query}": found ${found.length} leads`);
     } catch (err) {
-      logger.warn(`Crunchbase search failed for "${query}": ${err.message}`);
+      logger.warn(`Google News query failed "${query}": ${err.message}`);
     }
   }
 
-  logger.info(`Crunchbase scraper total: ${results.length} leads`);
+  logger.info(`Google News scraper total: ${results.length} leads`);
   return results;
 }

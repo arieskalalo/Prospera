@@ -2,11 +2,9 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger.js';
 
-const BASE = 'https://www.difc.ae';
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
-  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept': 'application/json, text/html, */*',
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -15,54 +13,50 @@ export async function runDIFC() {
   logger.info('DIFC scraper starting');
   const results = [];
 
+  // Approach 1: WordPress REST API (DIFC FinTech Hive runs on WordPress)
   try {
-    // DIFC Fintech Hive — public member list
-    const { data: html } = await axios.get(
-      'https://fintechhive.difc.ae/cohort/',
+    const { data } = await axios.get(
+      'https://fintechhive.difc.ae/wp-json/wp/v2/posts?per_page=100&_fields=title,excerpt,categories',
       { headers: HEADERS, timeout: 20000 }
     );
-    const $ = cheerio.load(html);
-
-    // Try multiple selectors that DIFC uses for company cards
-    const selectors = [
-      '.company-card', '.member-card', '.cohort-item',
-      '[class*="company"]', '[class*="member"]', 'article'
-    ];
-
-    let found = false;
-    for (const sel of selectors) {
-      const cards = $(sel);
-      if (cards.length > 2) {
-        cards.each((_, el) => {
-          const name = $(el).find('h2,h3,h4,[class*="title"],[class*="name"]').first().text().trim();
-          const desc = $(el).find('p,[class*="desc"]').first().text().trim();
-          if (name && name.length > 2) {
-            results.push({ company: name, description: desc, category: 'Fintech', industry: 'Fintech' });
-          }
-        });
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      // Fallback: scrape DIFC main company directory
-      await sleep(2000);
-      const { data: dirHtml } = await axios.get(
-        `${BASE}/business/companies/?sector=fintech`,
-        { headers: HEADERS, timeout: 20000 }
-      );
-      const $d = cheerio.load(dirHtml);
-      $d('.company-listing__item, .listing-item, [class*="company-item"]').each((_, el) => {
-        const name = $d(el).find('h2,h3,h4,strong,[class*="name"]').first().text().trim();
-        const desc = $d(el).find('p').first().text().trim();
-        if (name) results.push({ company: name, description: desc, industry: 'Fintech' });
+    if (Array.isArray(data) && data.length > 0) {
+      data.forEach(post => {
+        const name = post.title?.rendered?.replace(/<[^>]+>/g, '').trim();
+        const desc = post.excerpt?.rendered?.replace(/<[^>]+>/g, '').trim();
+        if (name && name.length > 2) {
+          results.push({ company: name, description: desc || '', industry: 'Fintech', _source: 'DIFC FinTech Hive' });
+        }
       });
+      logger.info(`DIFC WP API: found ${results.length} companies`);
+      return results;
     }
-
-    logger.info(`DIFC: found ${results.length} companies`);
   } catch (err) {
-    logger.warn(`DIFC scraper failed: ${err.message}`);
+    logger.warn(`DIFC WP API failed: ${err.message}`);
+  }
+
+  // Approach 2: Scrape DIFC companies static page with fintech filter
+  await sleep(2000);
+  try {
+    const pages = [
+      'https://www.difc.ae/business/companies/?sector=fintech',
+      'https://www.difc.ae/business/companies/?sector=payments',
+    ];
+    for (const url of pages) {
+      const { data: html } = await axios.get(url, { headers: { ...HEADERS, Accept: 'text/html' }, timeout: 20000 });
+      const $ = cheerio.load(html);
+
+      // Try multiple selectors
+      $('h2, h3, .company-name, .listing-title, [class*="company-title"], [class*="member-name"]').each((_, el) => {
+        const name = $(el).text().trim();
+        if (name && name.length > 2 && name.length < 80 && !/menu|nav|footer|header/i.test(name)) {
+          results.push({ company: name, industry: 'Fintech', _source: 'DIFC Directory' });
+        }
+      });
+      await sleep(1500);
+    }
+    logger.info(`DIFC static scrape: found ${results.length} companies`);
+  } catch (err) {
+    logger.warn(`DIFC static scrape failed: ${err.message}`);
   }
 
   return results;

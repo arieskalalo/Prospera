@@ -4,8 +4,7 @@ import { logger } from '../utils/logger.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
-  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept': 'text/html, application/json, */*',
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -14,30 +13,52 @@ export async function runADGM() {
   logger.info('ADGM scraper starting');
   const results = [];
 
+  // Approach 1: UAE Central Bank licensed payment service providers (public PDF/HTML list)
   try {
-    // ADGM public entity register — financial services category
-    const categories = ['Fintech', 'Payment Service Provider', 'Money Service Business'];
+    const { data: html } = await axios.get(
+      'https://www.centralbank.ae/en/licensed-financial-institutions',
+      { headers: HEADERS, timeout: 20000 }
+    );
+    const $ = cheerio.load(html);
 
-    for (const cat of categories) {
-      await sleep(2000);
-      const url = `https://www.adgm.com/register/entity-search?category=${encodeURIComponent(cat)}`;
-      const { data: html } = await axios.get(url, { headers: HEADERS, timeout: 20000 });
+    $('table tbody tr, .institution-row, li').each((_, el) => {
+      const text = $(el).text().trim();
+      const name = text.split('\n')[0].trim();
+      if (name && name.length > 3 && name.length < 80) {
+        results.push({ company: name, category: 'Licensed Financial Institution', industry: 'Financial Services', _source: 'UAE Central Bank' });
+      }
+    });
+    logger.info(`UAE Central Bank: found ${results.length} institutions`);
+  } catch (err) {
+    logger.warn(`UAE Central Bank scrape failed: ${err.message}`);
+  }
+
+  await sleep(2000);
+
+  // Approach 2: ADGM public register via their search page (static results)
+  try {
+    const searchTerms = ['payment', 'fintech', 'remittance', 'exchange'];
+    for (const term of searchTerms) {
+      const { data: html } = await axios.get(
+        `https://www.adgm.com/register/entity-search?name=${encodeURIComponent(term)}&status=Active`,
+        { headers: HEADERS, timeout: 20000 }
+      );
       const $ = cheerio.load(html);
 
-      // Try common table/card patterns for entity registers
-      $('table tbody tr, .entity-row, .register-item, [class*="entity"]').each((_, el) => {
-        const cells = $(el).find('td');
-        const name = cells.first().text().trim() || $(el).find('[class*="name"],h3,h4').first().text().trim();
-        const category = cells.eq(1).text().trim() || cat;
-        if (name && name.length > 2 && !/name|entity|company/i.test(name)) {
-          results.push({ company: name, category, industry: 'Financial Services / Fintech' });
+      // Look for any table rows or list items with company names
+      $('table tbody tr').each((_, el) => {
+        const cols = $(el).find('td');
+        const name = cols.first().text().trim();
+        const category = cols.eq(1).text().trim() || 'Financial Services';
+        if (name && name.length > 2 && !/name|company|entity/i.test(name)) {
+          results.push({ company: name, category, industry: 'Financial Services', _source: 'ADGM Register' });
         }
       });
+      await sleep(2000);
     }
-
-    logger.info(`ADGM: found ${results.length} entities`);
+    logger.info(`ADGM register: found ${results.length} total entities`);
   } catch (err) {
-    logger.warn(`ADGM scraper failed: ${err.message}`);
+    logger.warn(`ADGM register scrape failed: ${err.message}`);
   }
 
   return results;

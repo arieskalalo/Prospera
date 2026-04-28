@@ -21,6 +21,8 @@ const HIGH_SIGNAL = [
 const GEO_KEYWORDS = [
   'uae', 'dubai', 'abu dhabi', 'sharjah', 'difc', 'adgm',
   'mena', 'middle east', 'gulf', 'gcc', 'saudi', 'qatar', 'kuwait',
+  'oman', 'bahrain', 'jordan', 'egypt', 'pakistan', 'india', 'philippines',
+  'sri lanka', 'bangladesh', 'nepal', 'ethiopia', 'uganda', 'senegal',
 ];
 
 const ACTIVITY_KEYWORDS = [
