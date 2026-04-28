@@ -1,7 +1,7 @@
 import pLimit from 'p-limit';
 import { db } from './supabase.js';
 import { logger } from './utils/logger.js';
-import { normalize } from './utils/normalize.js';
+import { normalize, isHubpayRelevant } from './utils/normalize.js';
 import { getExistingCompanies, isDuplicate } from './utils/dedup.js';
 import { runDIFC }       from './scrapers/difc.js';
 import { runADGM }       from './scrapers/adgm.js';
@@ -42,12 +42,17 @@ async function main() {
 
   logger.info(`Total raw results from all scrapers: ${allRaw.length}`);
 
-  // 4. Normalize and deduplicate
+  // 4. Normalize, filter for HubPay relevance, and deduplicate
   const seen = new Set();
   const toInsert = [];
+  let filteredOut = 0;
 
   for (const raw of allRaw) {
     if (!raw.company || raw.company.length < 2) continue;
+
+    // Only keep leads relevant to HubPay's business
+    const searchText = [raw.company, raw.description, raw.category, raw.industry].join(' ');
+    if (!isHubpayRelevant(searchText)) { filteredOut++; continue; }
 
     const lead = normalize(raw, raw._source || 'Web Scraper');
 
@@ -58,6 +63,8 @@ async function main() {
     seen.add(lead.company.toLowerCase().trim());
     toInsert.push(lead);
   }
+
+  logger.info(`Filtered out ${filteredOut} irrelevant leads`);
 
   logger.info(`After dedup: ${toInsert.length} new leads to insert`);
 

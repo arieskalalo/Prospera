@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger.js';
+import { isHubpayRelevant } from '../utils/normalize.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
@@ -9,7 +10,7 @@ const HEADERS = {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// RSS feeds covering UAE / MENA fintech
+// RSS feeds covering UAE / MENA payments & fintech
 const FEEDS = [
   { url: 'https://wamda.com/feed',                           source: 'Wamda' },
   { url: 'https://www.arabianbusiness.com/rss',              source: 'Arabian Business' },
@@ -19,7 +20,7 @@ const FEEDS = [
   { url: 'https://www.khaleejtimes.com/business/rss',        source: 'Khaleej Times' },
 ];
 
-// Patterns to extract company names from news headlines
+// Extract company name from headline patterns
 const FUNDING_PATTERNS = [
   /^(.+?)\s+raises/i,
   /^(.+?)\s+secures/i,
@@ -28,27 +29,19 @@ const FUNDING_PATTERNS = [
   /^(.+?)\s+expands\s+(?:into|to)\s+UAE/i,
   /UAE[''s]*\s+(.+?)\s+raises/i,
   /Dubai[''s]*\s+(.+?)\s+raises/i,
+  /^(.+?)\s+partners\s+with/i,
+  /^(.+?)\s+signs\s+deal/i,
 ];
 
 function extractCompanyFromTitle(title = '') {
   for (const pattern of FUNDING_PATTERNS) {
     const m = title.match(pattern);
     if (m && m[1]) {
-      const name = m[1].replace(/^(UAE|Dubai|Abu Dhabi|MENA)\s+/i, '').trim();
+      const name = m[1].replace(/^(UAE|Dubai|Abu Dhabi|MENA|Gulf)\s+/i, '').trim();
       if (name.length > 2 && name.length < 60) return name;
     }
   }
   return null;
-}
-
-function isFintechRelevant(text = '') {
-  const t = text.toLowerCase();
-  return (
-    t.includes('fintech') || t.includes('payment') || t.includes('remit') ||
-    t.includes('banking') || t.includes('forex') || t.includes('currency') ||
-    t.includes('financial') || t.includes('crypto') || t.includes('wallet') ||
-    t.includes('lending') || t.includes('insurtech') || t.includes('wealthtech')
-  );
 }
 
 async function parseFeed(feedUrl, source) {
@@ -61,7 +54,8 @@ async function parseFeed(feedUrl, source) {
     const desc  = $(el).find('description').text().replace(/<[^>]+>/g, '').trim();
     const combined = `${title} ${desc}`;
 
-    if (!isFintechRelevant(combined)) return;
+    // Only keep items relevant to HubPay's business
+    if (!isHubpayRelevant(combined)) return;
 
     const company = extractCompanyFromTitle(title);
     if (!company) return;
@@ -69,7 +63,7 @@ async function parseFeed(feedUrl, source) {
     leads.push({
       company,
       description: desc.slice(0, 400),
-      industry: 'Fintech',
+      industry: 'Fintech / Payments',
       _source: source,
     });
   });
@@ -86,7 +80,7 @@ export async function runNews() {
       await sleep(1500);
       const leads = await parseFeed(feed.url, feed.source);
       results.push(...leads);
-      logger.info(`${feed.source}: found ${leads.length} fintech mentions`);
+      logger.info(`${feed.source}: found ${leads.length} HubPay-relevant leads`);
     } catch (err) {
       logger.warn(`${feed.source} feed failed: ${err.message}`);
     }
