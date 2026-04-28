@@ -26,11 +26,14 @@ const GEO_KEYWORDS = [
 ];
 
 const ACTIVITY_KEYWORDS = [
+  // Core money-movement signals (HubPay's actual business)
   'payment', 'transfer', 'remit', 'payroll', 'salary', 'wage',
-  'fx', 'forex', 'currency', 'exchange', 'banking', 'fintech',
-  'financial', 'wallet', 'disbursement', 'payout', 'collect',
+  'fx', 'forex', 'currency', 'exchange',
+  'wallet', 'disbursement', 'payout',
   'trade finance', 'import', 'export', 'freight', 'logistics',
   'staffing', 'recruitment', 'manpower', 'workforce',
+  'money exchange', 'money service', 'neobank', 'digital bank',
+  // Removed: 'banking', 'fintech', 'financial' — too broad, catches AI/SaaS/food-tech etc.
 ];
 
 export function isHubpayRelevant(text = '') {
