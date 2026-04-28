@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger.js';
+import { isHubpayRelevant, isCompanyName } from '../utils/normalize.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
@@ -9,14 +10,16 @@ const HEADERS = {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Google News RSS — free, no auth, no JS required
+// Google News RSS — queries focused on HubPay's direct competitor space
 const QUERIES = [
-  'UAE fintech payment startup funding',
-  'Dubai remittance cross-border payment',
-  'MENA payments company raises',
-  'Africa corridor payment UAE',
-  'UAE cross-border payroll company',
-  'Gulf fintech launch 2026',
+  'UAE remittance money transfer company',
+  'Dubai cross-border payment raises funding',
+  'MENA cross-border payments startup',
+  'UAE exchange house digital remittance',
+  'Africa corridor payment UAE raises',
+  'cross-border payroll UAE MENA',
+  'UAE Pakistan India remittance fintech',
+  'multi-currency accounts UAE startup',
 ];
 
 // Extract company name from news headline
@@ -54,14 +57,15 @@ async function fetchGoogleNews(query) {
     const title = $(el).find('title').text().replace(/ - .*$/, '').trim();
     const desc  = $(el).find('description').text().replace(/<[^>]+>/g, '').trim();
     const company = extractCompany(title);
-    if (company) {
-      leads.push({
-        company,
-        description: desc.slice(0, 400),
-        industry: 'Fintech / Payments',
-        _source: 'Google News',
-      });
-    }
+    if (!company || !isCompanyName(company)) return;
+    if (!isHubpayRelevant(`${company} ${desc}`)) return;
+
+    leads.push({
+      company,
+      description: desc.slice(0, 400),
+      industry: 'Fintech / Payments',
+      _source: 'Google News',
+    });
   });
 
   return leads;

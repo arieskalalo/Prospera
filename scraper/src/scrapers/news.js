@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger.js';
-import { isHubpayRelevant } from '../utils/normalize.js';
+import { isHubpayRelevant, isCompanyName } from '../utils/normalize.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
@@ -58,7 +58,7 @@ async function parseFeed(feedUrl, source) {
     if (!isHubpayRelevant(combined)) return;
 
     const company = extractCompanyFromTitle(title);
-    if (!company) return;
+    if (!company || !isCompanyName(company)) return;
 
     leads.push({
       company,
