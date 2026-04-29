@@ -893,9 +893,12 @@ function openModal(title, data, onSave) {
 // ════════════════════════════════════════════
 // CONFIRM
 // ════════════════════════════════════════════
-function showConfirm(msg, onYes) {
+function showConfirm(msg, onYes, yesLabel='Delete', title='Delete Lead') {
   const ov=$('cfm-ov');
   $('cfm-msg').textContent=msg;
+  $('cfm-title').textContent=title;
+  $('cfm-yes').textContent=yesLabel;
+  $('cfm-yes').className=yesLabel==='Delete'?'btn btn-danger':'btn btn-primary';
   ov.classList.add('open');
   const close=()=>ov.classList.remove('open');
   $('cfm-no').onclick=close;
@@ -1083,7 +1086,7 @@ function init() {
         setLoading(false);
         renderAll();
         showToast(`Imported ${imported} lead${imported!==1?'s':''}${skipped ? `, skipped ${skipped} duplicate${skipped!==1?'s':''}` : ''}`);
-      });
+      }, 'Import', 'Import Leads');
     };
     reader.readAsText(file);
     e.target.value = '';
