@@ -632,6 +632,7 @@ const UserAdmin = {
   listUsers()          { return this._call('list-users'); },
   inviteUser(email)    { return this._call('invite-user', 'POST', { email }); },
   resetPassword(email) { return this._call('reset-user-password', 'POST', { email }); },
+  deleteUser(userId)   { return this._call('delete-user', 'POST', { userId }); },
 };
 
 // ════════════════════════════════════════════
@@ -1097,8 +1098,9 @@ async function renderUsers() {
       <td><span class="badge" style="color:${u.confirmed?'#10B981':'#F59E0B'};background:${u.confirmed?'rgba(16,185,129,.1)':'rgba(245,158,11,.1)'}">${u.confirmed?'Active':'Pending invite'}</span></td>
       <td class="td-dt">${u.last_sign_in_at?u.last_sign_in_at.slice(0,10):'Never'}</td>
       <td class="td-dt">${esc(u.created_at.slice(0,10))}</td>
-      <td><div class="row-acts" style="opacity:1">
+      <td><div class="row-acts" style="opacity:1;gap:6px">
         <button class="btn btn-secondary btn-sm" data-user-reset="${esc(u.email)}">Reset Password</button>
+        <button class="btn btn-danger btn-sm" data-user-delete-id="${esc(u.id)}" data-user-delete-email="${esc(u.email)}">Remove</button>
       </div></td>
     </tr>`).join('');
 
@@ -1117,6 +1119,22 @@ async function renderUsers() {
         catch (err) { showToast(`Error: ${err.message}`); }
         setLoading(false);
       }, 'Send Email', 'Reset Password');
+    });
+  });
+
+  $('users-tbl-wrap').querySelectorAll('[data-user-delete-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const userId = btn.dataset.userDeleteId;
+      const email = btn.dataset.userDeleteEmail;
+      showConfirm(`Remove ${email} from the CRM? This cannot be undone.`, async () => {
+        setLoading(true);
+        try {
+          await UserAdmin.deleteUser(userId);
+          showToast(`${email} removed`);
+          await renderUsers();
+        } catch (err) { showToast(`Error: ${err.message}`); }
+        setLoading(false);
+      }, 'Remove User', 'Remove User');
     });
   });
 }
