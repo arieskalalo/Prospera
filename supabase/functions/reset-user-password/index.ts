@@ -39,17 +39,24 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Use admin client to send password reset email
+    // Generate reset link instead of sending email (bypasses SMTP)
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
-    const { error } = await adminClient.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://arieskalalo.github.io/Prospera/'
+    const { data, error } = await adminClient.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: 'https://arieskalalo.github.io/Prospera/'
+      }
     })
     if (error) throw error
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({
+      success: true,
+      reset_link: data.properties.action_link
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {

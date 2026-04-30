@@ -44,12 +44,21 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      redirectTo: 'https://arieskalalo.github.io/Prospera/'
+    // Generate invite link instead of sending email (bypasses SMTP)
+    const { data, error } = await adminClient.auth.admin.generateLink({
+      type: 'invite',
+      email: email,
+      options: {
+        redirectTo: 'https://arieskalalo.github.io/Prospera/'
+      }
     })
     if (error) throw error
 
-    return new Response(JSON.stringify({ success: true, user_id: data.user.id }), {
+    return new Response(JSON.stringify({
+      success: true,
+      user_id: data.user.id,
+      invite_link: data.properties.action_link
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (err) {
