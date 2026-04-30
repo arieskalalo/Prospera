@@ -374,6 +374,8 @@ html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; font-s
     <input id="si-pw" class="si-input" type="password" placeholder="Password" autocomplete="current-password">
     <div id="si-err" class="si-err">Invalid email or password</div>
     <button id="si-btn" class="si-btn">Sign In</button>
+    <button id="si-forgot" type="button" style="background:none;border:none;color:var(--primary);font-family:inherit;font-size:12px;cursor:pointer;margin-top:10px;width:100%;text-align:center;">Forgot password?</button>
+    <div id="si-reset-msg" style="display:none;font-size:12px;color:#10B981;margin-top:8px;text-align:center;"></div>
   </div>
 </div>
 
@@ -1545,6 +1547,18 @@ function showSignIn() {
   [$('si-email'), $('si-pw')].forEach(el =>
     el.addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); })
   );
+
+  $('si-forgot').addEventListener('click', async () => {
+    const email = $('si-email').value.trim();
+    const msg = $('si-reset-msg');
+    if (!email) { $('si-err').textContent = 'Enter your email first'; $('si-err').style.display = 'block'; return; }
+    $('si-err').style.display = 'none';
+    $('si-forgot').disabled = true; $('si-forgot').textContent = 'Sending…';
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: 'https://arieskalalo.github.io/Prospera/' });
+    $('si-forgot').disabled = false; $('si-forgot').textContent = 'Forgot password?';
+    if (error) { $('si-err').textContent = error.message; $('si-err').style.display = 'block'; }
+    else { msg.textContent = 'Password reset email sent — check your inbox.'; msg.style.display = 'block'; }
+  });
 }
 
 async function bootApp() {
