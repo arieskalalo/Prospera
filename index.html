@@ -507,10 +507,11 @@ html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; font-s
 
 <script>
 'use strict';
-// Capture URL hash BEFORE Supabase clears it (invite / recovery links)
-const _urlParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-const _linkType = _urlParams.get('type'); // 'invite' | 'recovery' | 'signup' | null
-const _fromEmailLink = _urlParams.has('access_token'); // true when arriving from any email link
+// Capture URL params BEFORE Supabase clears them (invite / recovery links)
+// Supabase uses hash (#access_token=) for implicit flow, query (?code=) for PKCE flow
+const _urlHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+const _urlQuery = new URLSearchParams(window.location.search);
+const _fromEmailLink = _urlHash.has('access_token') || _urlQuery.has('code');
 // ════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════
