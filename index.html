@@ -1134,6 +1134,7 @@ async function renderUsers() {
           </div>
           <div class="m-ft"><button class="btn btn-secondary" data-close-modal>Done</button></div>`;
         ov.classList.add('open');
+        m.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click',()=>ov.classList.remove('open')));
         document.getElementById('copy-reset-link').addEventListener('click', () => {
           navigator.clipboard.writeText(result.reset_link);
           document.getElementById('copy-reset-confirm').style.display='block';
@@ -1478,6 +1479,7 @@ function init() {
           </div>
           <div class="m-ft"><button class="btn btn-secondary" data-close-modal>Done</button></div>`;
         ov.classList.add('open');
+        m.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click',()=>ov.classList.remove('open')));
         document.getElementById('copy-invite-link').addEventListener('click', () => {
           navigator.clipboard.writeText(result.invite_link);
           document.getElementById('copy-confirm').style.display='block';
@@ -1617,8 +1619,8 @@ async function bootApp() {
 }
 
 // Handle password recovery / invite links (fires when user clicks email link)
-db.auth.onAuthStateChange(async (event) => {
-  if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && _fromEmailLink)) {
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'PASSWORD_RECOVERY' || ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && _fromEmailLink && session)) {
     const ov=$('modal-ov'), m=$('modal');
     m.innerHTML=`
       <div class="m-hd"><span class="m-title">Set Your Password</span></div>
