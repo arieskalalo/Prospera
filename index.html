@@ -512,6 +512,7 @@ html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; font-s
 const _urlHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 const _urlQuery = new URLSearchParams(window.location.search);
 const _fromEmailLink = _urlHash.has('access_token') || _urlQuery.has('code');
+const _urlLinkError = _urlHash.get('error_code') || _urlHash.get('error');
 // ════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════
@@ -1300,12 +1301,12 @@ function renderAll() {
 // TOAST
 // ════════════════════════════════════════════
 let _toastTimer;
-function showToast(msg) {
+function showToast(msg, duration) {
   const t = $('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), duration || 3200);
 }
 
 // ════════════════════════════════════════════
@@ -1647,7 +1648,17 @@ db.auth.onAuthStateChange(async (event, session) => {
 });
 
 (async () => {
-  // If arriving from an email link, let onAuthStateChange handle it
+  // If the invite/reset link was expired or already used, show a clear message
+  if (_urlLinkError) {
+    history.replaceState(null, '', window.location.pathname);
+    showSignIn();
+    const msg = _urlLinkError === 'otp_expired'
+      ? 'This link has expired or was already used. Ask your admin to generate a new one.'
+      : (_urlHash.get('error_description') || 'Invalid link. Please request a new one.').replace(/\+/g,' ');
+    setTimeout(() => showToast(msg, 6000), 300);
+    return;
+  }
+  // If arriving from a valid email link, let onAuthStateChange handle it
   if (_fromEmailLink) return;
   const { data: { session } } = await db.auth.getSession();
   if (session) {
