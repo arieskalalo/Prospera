@@ -1600,7 +1600,10 @@ function showSignIn() {
     try {
       // Use db.functions.invoke so the anon key is sent automatically
       const { data, error } = await db.functions.invoke('forgot-password', { body: { email } });
-      if (error) throw error;
+      if (error) {
+        const detail = await error.context?.json?.().catch(()=>null);
+        throw new Error(detail?.error || error.message);
+      }
       // Show the link inline inside the sign-in box (modal z-index is below sign-in gate)
       const msg = $('si-reset-msg');
       msg.innerHTML = `
